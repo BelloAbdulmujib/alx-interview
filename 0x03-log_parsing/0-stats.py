@@ -3,59 +3,54 @@
 '''
 
 import sys
-import signal
-from collections import defaultdict
+
+
+def print_msg(dict_sc, total_file_size):
+    """
+    Method to print
+    Args:
+        dict_sc: dict of status codes
+        total_file_size: total of the file
+    Returns:
+        Nothing
+    """
+
+    print("File size: {}".format(total_file_size))
+    for key, val in sorted(dict_sc.items()):
+        if val != 0:
+            print("{}: {}".format(key, val))
+
 
 total_file_size = 0
-status_code_counts = defaultdict(int)
-valid_status_codes = {200, 301, 400, 401, 403, 404, 405, 500}
-line_count = 0
-
-
-def print_stats():
-    """ Print the computed statistics. """
-    print(f"File size: {total_file_size}")
-    for status_code in sorted(valid_status_codes):
-        if status_code_counts[status_code] > 0:
-            print(f"{status_code}: {status_code_counts[status_code]}")
-
-
-def signal_handler(sig, frame):
-    """ Handle keyboard interruption (CTRL + C). """
-    print_stats()
-    sys.exit(0)
-
-
-signal.signal(signal.SIGINT, signal_handler)
+code = 0
+counter = 0
+dict_sc = {"200": 0,
+           "301": 0,
+           "400": 0,
+           "401": 0,
+           "403": 0,
+           "404": 0,
+           "405": 0,
+           "500": 0}
 
 try:
     for line in sys.stdin:
-        parts = line.split()
-        if len(parts) < 7:
-            continue
+        parsed_line = line.split()  # ✄ trimming
+        parsed_line = parsed_line[::-1]  # inverting
 
-        ip, date, request, status_code, file_size = parts[0], parts[3], \
+        if len(parsed_line) > 2:
+            counter += 1
 
-        parts[5], parts[-2], parts[-1]
+            if counter <= 10:
+                total_file_size += int(parsed_line[0])  # file size
+                code = parsed_line[1]  # status code
 
-        if not status_code.isdigit() or not file_size.isdigit():
-            continue
+                if (code in dict_sc.keys()):
+                    dict_sc[code] += 1
 
-        status_code = int(status_code)
-        file_size = int(file_size)
-
-        if status_code not in valid_status_codes:
-            continue
-
-        total_file_size += file_size
-        status_code_counts[status_code] += 1
-        line_count += 1
-
-        if line_count % 10 == 0:
-            print_stats()
-
-except Exception as e:
-    print(f"Error: {e}")
+            if (counter == 10):
+                print_msg(dict_sc, total_file_size)
+                counter = 0
 
 finally:
-    print_stats()
+    print_msg(dict_sc, total_file_size)
